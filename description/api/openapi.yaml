@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: 业务工作台用户会话
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: 根路径部署。子路径部署时在此前加上平台路径。
+paths:
+  /session:
+    get:
+      operationId: getSession
+      summary: 读取当前用户的已验证身份
+      security:
+        - userBearer: []
+      responses:
+        '200':
+          description: 身份有效且允许访问本平台
+          headers:
+            Cache-Control:
+              required: true
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [userid, username, ttl]
+                properties:
+                  userid: { type: string, pattern: '\S' }
+                  username: { type: string, pattern: '\S' }
+                  ttl: { type: integer, minimum: 1, maximum: 9007199254740991, description: 查询时用户会话剩余秒数 }
+              example: { userid: demo-01, username: 示例用户, ttl: 300 }
+        '401':
+          description: 用户令牌缺失或用户登录失效
+          headers:
+            WWW-Authenticate:
+              required: true
+              schema: { type: string, example: Bearer }
+        '403':
+          description: 用户身份有效，业务平台拒绝准入
+        '503':
+          description: 平台会话未就绪或身份查询依赖暂不可用
+components:
+  securitySchemes:
+    userBearer:
+      type: http
+      scheme: bearer
+      description: 主系统签发给用户的访问令牌
